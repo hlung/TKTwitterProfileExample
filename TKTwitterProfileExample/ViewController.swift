@@ -14,7 +14,8 @@ class ViewController: UIViewController {
   @IBOutlet weak var containerTopConstraint: NSLayoutConstraint!
   @IBOutlet weak var scrollView: UIScrollView!
 
-  let debugEnableContentOffsetObserving = false
+  let debugEnableContentOffsetObserving = true
+  let debugEnablePanGestureDelegate = false
 
   override func viewDidLoad() {
     super.viewDidLoad()
@@ -36,8 +37,69 @@ class ViewController: UIViewController {
 
     // magic!
     let pan = tableView1.panGestureRecognizer
-//    pan.delegate = self
     view.addGestureRecognizer(pan)
+
+    if debugEnablePanGestureDelegate {
+      pan.addTarget(self, action: #selector(didPan(gesture:)))
+//      pan.delegate = self
+    }
+  }
+
+  var oldTranslationY: CGFloat = 0
+
+  @objc func didPan(gesture: UIPanGestureRecognizer) {
+    switch(gesture.state){
+    case .began:
+      let touchStart = gesture.location(in: self.view)
+      print("touchStart: \(touchStart)")
+      oldTranslationY = 0
+    case .changed:
+      let distance = gesture.translation(in: self.view)
+      print("distance: \(distance)")
+
+      let y = distance.y
+      let adjustment = oldTranslationY - y
+      applyContainerAdjustment(adjustment)
+      oldTranslationY = y
+    default:
+      print("default")
+    }
+  }
+
+  private func applyContainerAdjustment(_ adjustment: CGFloat) {
+    containerTotalAdjustment += adjustment
+    // cap the adjustment to a certain range
+    containerTotalAdjustment = min(200, max(0, containerTotalAdjustment))
+    print("adjustment:", adjustment)
+    print("total:", containerTotalAdjustment)
+
+    // apply
+    containerTopConstraint.constant = containerInitialAdjustment - containerTotalAdjustment
+
+    if debugEnablePanGestureDelegate {
+      let isNotOnTop = containerTotalAdjustment < 200
+      if isNotOnTop {
+        tableView1.contentOffset = CGPoint(x: 0, y: 0)
+      }
+    }
+
+    if debugEnableContentOffsetObserving {
+      let isNotOnTop = containerTotalAdjustment < 200
+      let isScrollingUp = adjustment > 0
+      if isNotOnTop && isScrollingUp {
+        tableView1.contentOffset = CGPoint(x: 0, y: 0)
+      }
+
+      //      let isNotOnBottom = containerTotalAdjustment > 0
+      //      if (isScrollingDown) && isNotOnBottom {
+      //        tableView1.contentOffset = CGPoint(x: 0, y: 0)
+      //      }
+
+      //    let isAdjusting = containerTotalAdjustment > 0 && containerTotalAdjustment < 200
+      //    if (isScrollingUp || isScrollingDown) && isAdjusting {
+      //      tableView1.contentOffset = CGPoint(x: 0, y: oldContentOffsetY)
+      //    }
+    }
   }
 
   override func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey: Any]?, context: UnsafeMutableRawPointer?) {
@@ -57,31 +119,7 @@ class ViewController: UIViewController {
     let isScrollingDown = adjustment < 0 && newContentOffsetY < 0
     guard isScrollingUp || isScrollingDown else { return }
 
-    containerTotalAdjustment += adjustment
-    // cap the adjustment to a certain range
-    containerTotalAdjustment = min(200, max(0, containerTotalAdjustment))
-    print("adjustment:", adjustment)
-    print("total:", containerTotalAdjustment)
-
-    // apply
-    containerTopConstraint.constant = containerInitialAdjustment - containerTotalAdjustment
-
-    if debugEnableContentOffsetObserving {
-      let isNotOnTop = containerTotalAdjustment < 200
-      if (isScrollingUp) && isNotOnTop {
-        tableView1.contentOffset = CGPoint(x: 0, y: 0)
-      }
-
-//      let isNotOnBottom = containerTotalAdjustment > 0
-//      if (isScrollingDown) && isNotOnBottom {
-//        tableView1.contentOffset = CGPoint(x: 0, y: 0)
-//      }
-
-//    let isAdjusting = containerTotalAdjustment > 0 && containerTotalAdjustment < 200
-//    if (isScrollingUp || isScrollingDown) && isAdjusting {
-//      tableView1.contentOffset = CGPoint(x: 0, y: oldContentOffsetY)
-//    }
-    }
+    applyContainerAdjustment(adjustment)
   }
 
   lazy var contentView: UIView = {
@@ -153,9 +191,9 @@ class ViewController: UIViewController {
 //  }()
 }
 
-//extension ViewController: UIGestureRecognizerDelegate {
-//
-//}
+extension ViewController: UIGestureRecognizerDelegate {
+
+}
 
 extension ViewController: UITableViewDelegate, UITableViewDataSource {
   func numberOfSections(in tableView: UITableView) -> Int {
