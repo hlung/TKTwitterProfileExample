@@ -9,39 +9,37 @@ import UIKit
 
 class ViewController: UIViewController {
 
-  var containerInitialTopSpacing: CGFloat = 200
   var containerTotalAdjustment: CGFloat = 0
-
-  lazy var containerTopConstraint: NSLayoutConstraint = {
-    return self.tableView.topAnchor.constraint(equalTo: self.touchProxyView.topAnchor, constant: tableViewInitialTopSpacing)
-  }()
+  var containerInitialAdjustment: CGFloat = 0
+  @IBOutlet weak var containerTopConstraint: NSLayoutConstraint!
+  @IBOutlet weak var scrollView: UIScrollView!
 
   override func viewDidLoad() {
     super.viewDidLoad()
-
     view.backgroundColor = .lightGray
-    view.addSubview(segmentedTableViewContainerView)
+    scrollView.addSubview(contentView)
 
     let views: [String: UIView] = [
-      "segmentedTableViewContainerView": segmentedTableViewContainerView,
+      "scrollView": scrollView,
+      "contentView": contentView,
       ]
-    NSLayoutConstraint.activate(
-      NSLayoutConstraint.constraints(withVisualFormat: "H:|-[segmentedTableViewContainerView]-|", options: [], metrics: nil, views: views)
-      )
-    NSLayoutConstraint.activate(
-      NSLayoutConstraint.constraints(withVisualFormat: "V:|-200-[segmentedTableViewContainerView]-|", options: [], metrics: nil, views: views)
-      )
+    var constraints: [NSLayoutConstraint] = []
+    constraints += NSLayoutConstraint.constraints(withVisualFormat: "H:|[contentView]|", options: [], metrics: nil, views: views)
+    constraints += NSLayoutConstraint.constraints(withVisualFormat: "V:|[contentView]|", options: [], metrics: nil, views: views)
+    constraints += [contentView.widthAnchor.constraint(equalTo: scrollView.widthAnchor, multiplier: 1, constant: 0)]
+    constraints += [contentView.heightAnchor.constraint(equalTo: scrollView.heightAnchor, multiplier: 1, constant: 0)]
+    NSLayoutConstraint.activate(constraints)
 
-    containerTopConstraint.isActive = true
+    containerInitialAdjustment = containerTopConstraint.constant
 
-    tableView1.addObserver(self, forKeyPath: "contentOffset", options: [.old, .new], context: nil)
-    tableView2.addObserver(self, forKeyPath: "contentOffset", options: [.old, .new], context: nil)
+    // magic!
+    view.addGestureRecognizer(tableView1.panGestureRecognizer)
   }
 
   override func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey: Any]?, context: UnsafeMutableRawPointer?) {
     guard keyPath == "contentOffset", let scrollView = object as? UIScrollView else { return }
 
-    // exits if not manually scrolling
+    // ignore non-manual scrolling
     guard scrollView.isDragging || scrollView.isDecelerating else { return }
 
     guard let oldContentOffsetY = (change?[NSKeyValueChangeKey.oldKey] as? NSValue)?.cgPointValue.y,
@@ -54,65 +52,48 @@ class ViewController: UIViewController {
 
     // cap the adjustment to a certain range
     containerTotalAdjustment += adjustment
-    containerTotalAdjustment = min(120, max(0, containerTotalAdjustment))
+    containerTotalAdjustment = min(200, max(0, containerTotalAdjustment))
     print("adjustment:", adjustment)
     print("total:", containerTotalAdjustment)
 
     // apply
-    containerTopConstraint.constant = containerInitialTopSpacing - containerTotalAdjustment
+    containerTopConstraint.constant = containerInitialAdjustment - containerTotalAdjustment
   }
 
-  lazy var segmentedTableViewContainerView: UIView = {
+  lazy var contentView: UIView = {
     let view = UIView()
     view.translatesAutoresizingMaskIntoConstraints = false
-    view.backgroundColor = .gray
+    view.backgroundColor = .blue
 
-    var scrollView = UIScrollView()
-    scrollView.translatesAutoresizingMaskIntoConstraints = false
-    scrollView.backgroundColor = UIColor.lightGray
-    scrollView.alwaysBounceHorizontal = true
-    scrollView.isPagingEnabled = true
-    view.addSubview(scrollView)
-
-    let contentView = UIView()
-    contentView.translatesAutoresizingMaskIntoConstraints = false
-    contentView.backgroundColor = .gray
-
-    contentView.addSubview(tableView1)
-    contentView.addSubview(tableView2)
+    view.addSubview(tableView1)
+//    view.addSubview(tableView2)
 
     NSLayoutConstraint.activate([
-      tableView1.widthAnchor.constraint(equalTo: view.widthAnchor, multiplier: 1),
-      tableView2.widthAnchor.constraint(equalTo: view.widthAnchor, multiplier: 1),
-      tableView1.heightAnchor.constraint(equalTo: view.heightAnchor, multiplier: 1),
-      tableView2.heightAnchor.constraint(equalTo: view.heightAnchor, multiplier: 1),
+//      tableView1.widthAnchor.constraint(equalTo: scrollView.widthAnchor, multiplier: 1),
+//      tableView2.widthAnchor.constraint(equalTo: view.widthAnchor, multiplier: 1),
+//      tableView1.heightAnchor.constraint(equalTo: scrollView.heightAnchor, multiplier: 1),
+//      tableView2.heightAnchor.constraint(equalTo: view.heightAnchor, multiplier: 1),
       ])
 
-    //    NSLayoutConstraint.activate(
-    //      visualFormats: [
-    //        "H:|-[container]",
-    //        "V:|-[container]",
-    //        ],
-    //      views: [
-    //        "container": container,
-    //        ])
+    let views: [String: UIView] = [
+      "tableView1": tableView1,
+//      "tableView2": tableView2,
+      ]
+    var constraints: [NSLayoutConstraint] = []
+    constraints += NSLayoutConstraint.constraints(withVisualFormat: "H:|[tableView1]|", options: [], metrics: nil, views: views)
+//    constraints += NSLayoutConstraint.constraints(withVisualFormat: "H:|[tableView1][tableView2]|", options: [], metrics: nil, views: views)
+    constraints += NSLayoutConstraint.constraints(withVisualFormat: "V:|[tableView1]|", options: [], metrics: nil, views: views)
+//    constraints += NSLayoutConstraint.constraints(withVisualFormat: "V:|[tableView2]|", options: [], metrics: nil, views: views)
+    NSLayoutConstraint.activate(constraints)
 
-//    NSLayoutConstraint.activate(
-//      visualFormats: [
-//        "H:|-[button]-[label]",
-//        "V:|-[button]",
-//        "V:|-[label]",
-//        ],
-//      views: [
-//        "button": button,
-//        "label": label,
-//        ])
+    tableView1.addObserver(self, forKeyPath: "contentOffset", options: [.old, .new], context: nil)
+//    tableView2.addObserver(self, forKeyPath: "contentOffset", options: [.old, .new], context: nil)
 
     return view
   }()
 
-  lazy var tableView1: UITableView = {
-    let tableView = UITableView(frame: .zero, style: .plain)
+  lazy var tableView1: ControlContainableTableView = {
+    let tableView = ControlContainableTableView(frame: .zero, style: .plain)
     tableView.translatesAutoresizingMaskIntoConstraints = false
     tableView.separatorStyle = .none
     tableView.backgroundColor = UIColor.clear
@@ -167,4 +148,15 @@ extension ViewController: UITableViewDelegate, UITableViewDataSource {
   }
 }
 
-
+// This class enables scrolling to start from touching UIControl subviews (e.g. UIButton).
+final class ControlContainableTableView: UITableView {
+  override func touchesShouldCancel(in view: UIView) -> Bool {
+    if view is UIControl
+      && !(view is UITextInput)
+      && !(view is UISlider)
+      && !(view is UISwitch) {
+      return true
+    }
+    return super.touchesShouldCancel(in: view)
+  }
+}
