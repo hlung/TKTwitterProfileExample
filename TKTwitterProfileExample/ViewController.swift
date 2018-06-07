@@ -14,6 +14,8 @@ class ViewController: UIViewController {
   @IBOutlet weak var containerTopConstraint: NSLayoutConstraint!
   @IBOutlet weak var scrollView: UIScrollView!
 
+  let debugEnableContentOffsetObserving = false
+
   override func viewDidLoad() {
     super.viewDidLoad()
     view.backgroundColor = .lightGray
@@ -33,14 +35,19 @@ class ViewController: UIViewController {
     containerInitialAdjustment = containerTopConstraint.constant
 
     // magic!
-    view.addGestureRecognizer(tableView1.panGestureRecognizer)
+    let pan = tableView1.panGestureRecognizer
+//    pan.delegate = self
+    view.addGestureRecognizer(pan)
   }
 
   override func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey: Any]?, context: UnsafeMutableRawPointer?) {
     guard keyPath == "contentOffset", let scrollView = object as? UIScrollView else { return }
 
     // ignore non-manual scrolling
-    guard scrollView.isDragging || scrollView.isDecelerating else { return }
+    guard scrollView.isDragging || scrollView.isDecelerating else {
+      print("guarded")
+      return
+    }
 
     guard let oldContentOffsetY = (change?[NSKeyValueChangeKey.oldKey] as? NSValue)?.cgPointValue.y,
       let newContentOffsetY = (change?[NSKeyValueChangeKey.newKey] as? NSValue)?.cgPointValue.y else { return }
@@ -50,20 +57,37 @@ class ViewController: UIViewController {
     let isScrollingDown = adjustment < 0 && newContentOffsetY < 0
     guard isScrollingUp || isScrollingDown else { return }
 
-    // cap the adjustment to a certain range
     containerTotalAdjustment += adjustment
+    // cap the adjustment to a certain range
     containerTotalAdjustment = min(200, max(0, containerTotalAdjustment))
     print("adjustment:", adjustment)
     print("total:", containerTotalAdjustment)
 
     // apply
     containerTopConstraint.constant = containerInitialAdjustment - containerTotalAdjustment
+
+    if debugEnableContentOffsetObserving {
+      let isNotOnTop = containerTotalAdjustment < 200
+      if (isScrollingUp) && isNotOnTop {
+        tableView1.contentOffset = CGPoint(x: 0, y: 0)
+      }
+
+//      let isNotOnBottom = containerTotalAdjustment > 0
+//      if (isScrollingDown) && isNotOnBottom {
+//        tableView1.contentOffset = CGPoint(x: 0, y: 0)
+//      }
+
+//    let isAdjusting = containerTotalAdjustment > 0 && containerTotalAdjustment < 200
+//    if (isScrollingUp || isScrollingDown) && isAdjusting {
+//      tableView1.contentOffset = CGPoint(x: 0, y: oldContentOffsetY)
+//    }
+    }
   }
 
   lazy var contentView: UIView = {
     let view = UIView()
     view.translatesAutoresizingMaskIntoConstraints = false
-    view.backgroundColor = .blue
+    view.backgroundColor = .gray
 
     view.addSubview(tableView1)
 //    view.addSubview(tableView2)
@@ -86,9 +110,10 @@ class ViewController: UIViewController {
 //    constraints += NSLayoutConstraint.constraints(withVisualFormat: "V:|[tableView2]|", options: [], metrics: nil, views: views)
     NSLayoutConstraint.activate(constraints)
 
-    tableView1.addObserver(self, forKeyPath: "contentOffset", options: [.old, .new], context: nil)
-//    tableView2.addObserver(self, forKeyPath: "contentOffset", options: [.old, .new], context: nil)
-
+    if debugEnableContentOffsetObserving {
+      tableView1.addObserver(self, forKeyPath: "contentOffset", options: [.old, .new], context: nil)
+      //    tableView2.addObserver(self, forKeyPath: "contentOffset", options: [.old, .new], context: nil)
+    }
     return view
   }()
 
@@ -127,6 +152,10 @@ class ViewController: UIViewController {
 //    return label
 //  }()
 }
+
+//extension ViewController: UIGestureRecognizerDelegate {
+//
+//}
 
 extension ViewController: UITableViewDelegate, UITableViewDataSource {
   func numberOfSections(in tableView: UITableView) -> Int {
