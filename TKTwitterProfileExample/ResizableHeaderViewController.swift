@@ -1,5 +1,5 @@
 //
-//  ViewController.swift
+//  ResizableHeaderViewController.swift
 //  TKTwitterProfileExample
 //
 //  Created by Kolyutsakul, Thongchai on 6/6/18.
@@ -7,7 +7,7 @@
 
 import UIKit
 
-class ViewController: UIViewController {
+class ResizableHeaderViewController: UIViewController {
 
   @IBOutlet weak var tableView: ControlContainableTableView!
   @IBOutlet weak var headerView: UIView!
@@ -44,7 +44,7 @@ class ViewController: UIViewController {
 
 }
 
-extension ViewController: UIScrollViewDelegate {
+extension ResizableHeaderViewController: UIScrollViewDelegate {
   func scrollViewDidScroll(_ scrollView: UIScrollView) {
     print("offset: \(scrollView.contentOffset) isScrolling: \(scrollView.isDragging)")
 
@@ -54,7 +54,7 @@ extension ViewController: UIScrollViewDelegate {
   }
 }
 
-extension ViewController: UITableViewDelegate, UITableViewDataSource {
+extension ResizableHeaderViewController: UITableViewDelegate, UITableViewDataSource {
   func numberOfSections(in tableView: UITableView) -> Int {
     return 5
   }

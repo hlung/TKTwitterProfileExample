@@ -71,10 +71,10 @@
             </objects>
             <point key="canvasLocation" x="38" y="134"/>
         </scene>
-        <!--View Controller-->
+        <!--Resizable Header View Controller-->
         <scene sceneID="PjG-L4-f8e">
             <objects>
-                <viewController id="X4c-eF-nbx" customClass="ViewController" customModule="TKTwitterProfileExample" customModuleProvider="target" sceneMemberID="viewController">
+                <viewController id="X4c-eF-nbx" customClass="ResizableHeaderViewController" customModule="TKTwitterProfileExample" customModuleProvider="target" sceneMemberID="viewController">
                     <view key="view" contentMode="scaleToFill" id="zYs-cl-wbh">
                         <rect key="frame" x="0.0" y="0.0" width="375" height="667"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
