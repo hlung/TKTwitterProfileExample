@@ -9,190 +9,49 @@ import UIKit
 
 class ViewController: UIViewController {
 
-  var containerTotalAdjustment: CGFloat = 0
-  var containerInitialAdjustment: CGFloat = 0
-  @IBOutlet weak var containerTopConstraint: NSLayoutConstraint!
-  @IBOutlet weak var scrollView: UIScrollView!
-
-  let debugEnableContentOffsetObserving = true
-  let debugEnablePanGestureDelegate = false
+  @IBOutlet weak var tableView: ControlContainableTableView!
+  @IBOutlet weak var headerView: UIView!
+  @IBOutlet weak var headerViewHeightConstraint: NSLayoutConstraint!
 
   override func viewDidLoad() {
     super.viewDidLoad()
     view.backgroundColor = .lightGray
-    scrollView.addSubview(contentView)
 
-    let views: [String: UIView] = [
-      "scrollView": scrollView,
-      "contentView": contentView,
-      ]
-    var constraints: [NSLayoutConstraint] = []
-    constraints += NSLayoutConstraint.constraints(withVisualFormat: "H:|[contentView]|", options: [], metrics: nil, views: views)
-    constraints += NSLayoutConstraint.constraints(withVisualFormat: "V:|[contentView]|", options: [], metrics: nil, views: views)
-    constraints += [contentView.widthAnchor.constraint(equalTo: scrollView.widthAnchor, multiplier: 1, constant: 0)]
-    constraints += [contentView.heightAnchor.constraint(equalTo: scrollView.heightAnchor, multiplier: 1, constant: 0)]
-    NSLayoutConstraint.activate(constraints)
-
-    containerInitialAdjustment = containerTopConstraint.constant
-
-    // magic!
-    let pan = tableView1.panGestureRecognizer
-    view.addGestureRecognizer(pan)
-
-    if debugEnablePanGestureDelegate {
-      pan.addTarget(self, action: #selector(didPan(gesture:)))
-//      pan.delegate = self
-    }
-  }
-
-  var oldTranslationY: CGFloat = 0
-
-  @objc func didPan(gesture: UIPanGestureRecognizer) {
-    switch(gesture.state){
-    case .began:
-      let touchStart = gesture.location(in: self.view)
-      print("touchStart: \(touchStart)")
-      oldTranslationY = 0
-    case .changed:
-      let distance = gesture.translation(in: self.view)
-      print("distance: \(distance)")
-
-      let y = distance.y
-      let adjustment = oldTranslationY - y
-      applyContainerAdjustment(adjustment)
-      oldTranslationY = y
-    default:
-      print("default")
-    }
-  }
-
-  private func applyContainerAdjustment(_ adjustment: CGFloat) {
-    containerTotalAdjustment += adjustment
-    // cap the adjustment to a certain range
-    containerTotalAdjustment = min(200, max(0, containerTotalAdjustment))
-    print("adjustment:", adjustment)
-    print("total:", containerTotalAdjustment)
-
-    // apply
-    containerTopConstraint.constant = containerInitialAdjustment - containerTotalAdjustment
-
-    if debugEnablePanGestureDelegate {
-      let isNotOnTop = containerTotalAdjustment < 200
-      if isNotOnTop {
-        tableView1.contentOffset = CGPoint(x: 0, y: 0)
-      }
-    }
-
-    if debugEnableContentOffsetObserving {
-      let isNotOnTop = containerTotalAdjustment < 200
-      let isScrollingUp = adjustment > 0
-      if isNotOnTop && isScrollingUp {
-        tableView1.contentOffset = CGPoint(x: 0, y: 0)
-      }
-
-      //      let isNotOnBottom = containerTotalAdjustment > 0
-      //      if (isScrollingDown) && isNotOnBottom {
-      //        tableView1.contentOffset = CGPoint(x: 0, y: 0)
-      //      }
-
-      //    let isAdjusting = containerTotalAdjustment > 0 && containerTotalAdjustment < 200
-      //    if (isScrollingUp || isScrollingDown) && isAdjusting {
-      //      tableView1.contentOffset = CGPoint(x: 0, y: oldContentOffsetY)
-      //    }
-    }
-  }
-
-  override func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey: Any]?, context: UnsafeMutableRawPointer?) {
-    guard keyPath == "contentOffset", let scrollView = object as? UIScrollView else { return }
-
-    // ignore non-manual scrolling
-    guard scrollView.isDragging || scrollView.isDecelerating else {
-      print("guarded")
-      return
-    }
-
-    guard let oldContentOffsetY = (change?[NSKeyValueChangeKey.oldKey] as? NSValue)?.cgPointValue.y,
-      let newContentOffsetY = (change?[NSKeyValueChangeKey.newKey] as? NSValue)?.cgPointValue.y else { return }
-
-    let adjustment = newContentOffsetY - oldContentOffsetY
-    let isScrollingUp = adjustment > 0 && newContentOffsetY > 0
-    let isScrollingDown = adjustment < 0 && newContentOffsetY < 0
-    guard isScrollingUp || isScrollingDown else { return }
-
-    applyContainerAdjustment(adjustment)
-  }
-
-  lazy var contentView: UIView = {
-    let view = UIView()
-    view.translatesAutoresizingMaskIntoConstraints = false
-    view.backgroundColor = .gray
-
-    view.addSubview(tableView1)
-//    view.addSubview(tableView2)
-
-    NSLayoutConstraint.activate([
-//      tableView1.widthAnchor.constraint(equalTo: scrollView.widthAnchor, multiplier: 1),
-//      tableView2.widthAnchor.constraint(equalTo: view.widthAnchor, multiplier: 1),
-//      tableView1.heightAnchor.constraint(equalTo: scrollView.heightAnchor, multiplier: 1),
-//      tableView2.heightAnchor.constraint(equalTo: view.heightAnchor, multiplier: 1),
-      ])
-
-    let views: [String: UIView] = [
-      "tableView1": tableView1,
-//      "tableView2": tableView2,
-      ]
-    var constraints: [NSLayoutConstraint] = []
-    constraints += NSLayoutConstraint.constraints(withVisualFormat: "H:|[tableView1]|", options: [], metrics: nil, views: views)
-//    constraints += NSLayoutConstraint.constraints(withVisualFormat: "H:|[tableView1][tableView2]|", options: [], metrics: nil, views: views)
-    constraints += NSLayoutConstraint.constraints(withVisualFormat: "V:|[tableView1]|", options: [], metrics: nil, views: views)
-//    constraints += NSLayoutConstraint.constraints(withVisualFormat: "V:|[tableView2]|", options: [], metrics: nil, views: views)
-    NSLayoutConstraint.activate(constraints)
-
-    if debugEnableContentOffsetObserving {
-      tableView1.addObserver(self, forKeyPath: "contentOffset", options: [.old, .new], context: nil)
-      //    tableView2.addObserver(self, forKeyPath: "contentOffset", options: [.old, .new], context: nil)
-    }
-    return view
-  }()
-
-  lazy var tableView1: ControlContainableTableView = {
-    let tableView = ControlContainableTableView(frame: .zero, style: .plain)
-    tableView.translatesAutoresizingMaskIntoConstraints = false
-    tableView.separatorStyle = .none
-    tableView.backgroundColor = UIColor.clear
     tableView.rowHeight = UITableViewAutomaticDimension
     tableView.register(UITableViewCell.self, forCellReuseIdentifier: "cell")
     tableView.dataSource = self
     tableView.delegate = self
     tableView.delaysContentTouches = true
     tableView.canCancelContentTouches = true
-    return tableView
-  }()
 
-  lazy var tableView2: UITableView = {
-    let tableView = UITableView(frame: .zero, style: .plain)
-    tableView.translatesAutoresizingMaskIntoConstraints = false
-    tableView.separatorStyle = .none
-    tableView.backgroundColor = UIColor.clear
-    tableView.rowHeight = UITableViewAutomaticDimension
-    tableView.register(UITableViewCell.self, forCellReuseIdentifier: "cell")
-    tableView.dataSource = self
-    tableView.delegate = self
-    tableView.delaysContentTouches = true
-    tableView.canCancelContentTouches = true
-    return tableView
-  }()
+    let gesture = tableView.panGestureRecognizer
+    headerView.addGestureRecognizer(gesture)
+    view.addGestureRecognizer(gesture) // make the whole view controller scrollable
+  }
 
-//  lazy var label: UILabel = {
-//    let label = UILabel()
-//    label.translatesAutoresizingMaskIntoConstraints = false
-//    label.text = "TouchProxyView"
-//    return label
-//  }()
+  @IBAction func didTapButton(_ sender: Any) {
+    headerViewHeightConstraint.constant = CGFloat(40 + arc4random() % 200)
+  }
+
+  override func viewDidLayoutSubviews() {
+    super.viewDidLayoutSubviews()
+
+    var offset = tableView.contentOffset
+    tableView.contentInset = UIEdgeInsets(top: headerView.frame.height, left: 0, bottom: 0, right: 0)
+    offset.y = -headerView.frame.height
+    tableView.contentOffset = offset
+  }
+
 }
 
-extension ViewController: UIGestureRecognizerDelegate {
+extension ViewController: UIScrollViewDelegate {
+  func scrollViewDidScroll(_ scrollView: UIScrollView) {
+    print("offset: \(scrollView.contentOffset) isScrolling: \(scrollView.isDragging)")
 
+    if scrollView.isDragging || scrollView.isDecelerating {
+      headerViewHeightConstraint.constant = max(50, min(500, -scrollView.contentOffset.y))
+    }
+  }
 }
 
 extension ViewController: UITableViewDelegate, UITableViewDataSource {
