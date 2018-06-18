@@ -65,7 +65,7 @@ extension ResizableHeaderViewController: UIScrollViewDelegate {
       let segmentedControlHeight = segmentedControl.bounds.height
 //      headerViewHeightConstraint.constant = max(50, min(500, -scrollView.contentOffset.y))
 //      headerTopConstraint.constant = max(50, -scrollView.contentOffset.y)
-      headerTopConstraint.constant = 20 - max(segmentedControlHeight, scrollView.contentOffset.y + headerView.bounds.height)
+      headerTopConstraint.constant = (max(20 + segmentedControlHeight, -scrollView.contentOffset.y)) - headerView.bounds.height
     }
 
     print("headerTopConstraint.constant: \(headerTopConstraint.constant)")
