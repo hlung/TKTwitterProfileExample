@@ -13,6 +13,7 @@ class ResizableHeaderViewController: UIViewController {
   @IBOutlet weak var headerView: UIView!
   @IBOutlet weak var headerLabel: UILabel!
   @IBOutlet weak var headerTopConstraint: NSLayoutConstraint!
+  @IBOutlet weak var segmentedControl: UISegmentedControl!
 
   override func viewDidLoad() {
     super.viewDidLoad()
@@ -41,10 +42,12 @@ class ResizableHeaderViewController: UIViewController {
     headerLabel.text = text
     headerView.layoutIfNeeded()
 
-    var offset = tableView.contentOffset
-    tableView.contentInset = UIEdgeInsets(top: headerView.bounds.height, left: 0, bottom: 0, right: 0)
-    offset.y = -headerView.bounds.height
-    tableView.contentOffset = offset
+    let statusBarHeight: CGFloat = 20
+    let totalHeight = headerView.bounds.height + statusBarHeight
+    var contentOffset = tableView.contentOffset
+    tableView.contentInset = UIEdgeInsets(top: totalHeight, left: 0, bottom: 0, right: 0)
+    contentOffset.y = -totalHeight
+    tableView.contentOffset = contentOffset
   }
 
   override func viewDidLayoutSubviews() {
@@ -57,27 +60,29 @@ extension ResizableHeaderViewController: UIScrollViewDelegate {
   func scrollViewDidScroll(_ scrollView: UIScrollView) {
     print("offset: \(scrollView.contentOffset) isScrolling: \(scrollView.isDragging)")
     print("headerView.intrinsicContentSize.height: \(headerView.bounds.height)")
-    print("headerTopConstraint.constant: \(headerTopConstraint.constant)")
 
     if scrollView.isDragging || scrollView.isDecelerating {
+      let segmentedControlHeight = segmentedControl.bounds.height
 //      headerViewHeightConstraint.constant = max(50, min(500, -scrollView.contentOffset.y))
 //      headerTopConstraint.constant = max(50, -scrollView.contentOffset.y)
-      headerTopConstraint.constant = max(50, -scrollView.contentOffset.y) - headerView.bounds.height
+      headerTopConstraint.constant = 20 - max(segmentedControlHeight, scrollView.contentOffset.y + headerView.bounds.height)
     }
+
+    print("headerTopConstraint.constant: \(headerTopConstraint.constant)")
   }
 }
 
 extension ResizableHeaderViewController: UITableViewDelegate, UITableViewDataSource {
   func numberOfSections(in tableView: UITableView) -> Int {
-    return 5
+    return 1
   }
 
-  func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
-    return "Section \(section)"
-  }
+//  func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
+//    return "Section \(section)"
+//  }
 
   func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-    return 10
+    return 20
   }
 
   func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
