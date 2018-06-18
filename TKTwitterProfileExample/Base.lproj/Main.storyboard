@@ -92,7 +92,7 @@
                                         <constraints>
                                             <constraint firstAttribute="height" constant="96" id="Iqu-bj-1A3"/>
                                         </constraints>
-                                        <state key="normal" title="Button"/>
+                                        <state key="normal" title="Random header height"/>
                                         <connections>
                                             <action selector="didTapButton:" destination="X4c-eF-nbx" eventType="touchUpInside" id="nha-58-lPF"/>
                                         </connections>
